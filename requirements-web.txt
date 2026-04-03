@@ -1,0 +1,3 @@
+# Web interface dependencies (in addition to the desktop app dependencies)
+# Install with: pip install -r requirements-web.txt
+flask>=3.0.0

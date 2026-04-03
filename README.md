@@ -4,7 +4,77 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
 ![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green)
+![Flask](https://img.shields.io/badge/Flask-3.0%2B-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+---
+
+## 📱 Mobile Testing Interface (Web)
+
+A lightweight Flask web server lets you test the core OCR/scanning features from **any smartphone or tablet** — no desktop app installation needed.
+
+### Quick start
+
+```bash
+# 1. Install Tesseract OCR (same as desktop app)
+# 2. Install the extra web dependency
+pip install flask
+
+# 3. Start the server
+python web_app.py
+```
+
+Open `http://<your-machine-IP>:5000` on your phone (both devices must be on the same Wi-Fi).
+
+### Web interface features
+
+| Feature | Details |
+|---------|---------|
+| 📷 Camera capture | Tap the upload zone to shoot or pick an image directly on mobile |
+| 🪪 Single & dual-side | "Single Side" or "Both Sides" (Recto + Verso) tabs |
+| 🔍 Auto-detect | Optional card-outline detection + perspective correction |
+| ⚙️ OCR settings | Language code (e.g. `eng`, `fra`, `eng+ara`) and PSM mode selector |
+| 🗂️ Parsed data | Structured table showing extracted ID numbers, dates and names |
+| 🖼️ Preview | Processed image shown inline after scanning |
+
+### REST API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Serve the mobile HTML interface |
+| `/api/scan` | POST | Scan a single image; returns `text`, `parsed`, `preview` |
+| `/api/scan-both` | POST | Scan recto + optional verso in one request |
+
+**POST `/api/scan` – form fields**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `image` | file | — | Image to scan (PNG/JPG/BMP/TIFF, max 16 MB) |
+| `lang` | text | `eng` | Tesseract language code |
+| `psm` | text | `6` | Page Segmentation Mode (0–13) |
+| `auto_detect` | text | `false` | `true` to run card-outline detection first |
+
+**Response**
+```json
+{
+  "ok": true,
+  "text": "…extracted text…",
+  "parsed": [{"field": "ID Number", "value": "AB123456"}, …],
+  "preview": "data:image/png;base64,…"
+}
+```
+
+**POST `/api/scan-both`** – same fields but with `recto` and `verso` (optional) file fields instead of `image`.
+
+### CLI options
+
+```
+python web_app.py [--host HOST] [--port PORT] [--debug]
+
+  --host    Bind address (default: 0.0.0.0 – accessible on LAN)
+  --port    Port number  (default: 5000)
+  --debug   Enable Flask debug/reload mode
+```
 
 ---
 
@@ -52,6 +122,8 @@
 - **Tesseract OCR**: Must be installed separately
 
 ### Python Dependencies
+
+**Desktop application:**
 ```
 PyQt6>=6.0.0
 opencv-python>=4.5.0
@@ -60,6 +132,12 @@ pytesseract>=0.3.8
 Pillow>=8.0.0
 python-docx>=0.8.11
 ```
+
+**Web / mobile testing interface (additional):**
+```
+flask>=3.0.0
+```
+Install with: `pip install -r requirements-web.txt`
 
 ---
 

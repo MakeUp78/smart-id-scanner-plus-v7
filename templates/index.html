@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#1a73e8" />
+  <title>Smart ID Scanner – Mobile Tester</title>
+  <style>
+    /* ── Reset / base ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --clr-bg:       #f0f4f9;
+      --clr-surface:  #ffffff;
+      --clr-primary:  #1a73e8;
+      --clr-primary-d:#1557b0;
+      --clr-accent:   #34a853;
+      --clr-danger:   #ea4335;
+      --clr-text:     #202124;
+      --clr-muted:    #5f6368;
+      --clr-border:   #dadce0;
+      --radius:       12px;
+      --shadow:       0 2px 8px rgba(0,0,0,.12);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      min-height: 100vh;
+      padding-bottom: 2rem;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+    header {
+      background: var(--clr-primary);
+      color: #fff;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header svg { flex-shrink: 0; }
+    header h1  { font-size: 1.15rem; font-weight: 700; line-height: 1.25; }
+    header p   { font-size: .75rem; opacity: .85; }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    main {
+      max-width: 760px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ── Card ────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--clr-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--clr-border);
+      font-weight: 600;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--clr-primary);
+    }
+    .card-body { padding: 1rem; }
+
+    /* ── Tabs (Recto / Verso / Combined) ─────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 2px solid var(--clr-border);
+    }
+    .tab {
+      flex: 1;
+      padding: .7rem .5rem;
+      text-align: center;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--clr-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .2s, border-color .2s;
+      user-select: none;
+    }
+    .tab.active {
+      color: var(--clr-primary);
+      border-color: var(--clr-primary);
+    }
+    .tab-panel { display: none; padding: 1rem; }
+    .tab-panel.active { display: block; }
+
+    /* ── Form controls ───────────────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      margin-bottom: .35rem;
+      color: var(--clr-muted);
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: .6rem .75rem;
+      border: 1.5px solid var(--clr-border);
+      border-radius: 8px;
+      font-size: .9rem;
+      color: var(--clr-text);
+      background: var(--clr-surface);
+      appearance: none;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--clr-primary);
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    /* ── Image upload zone ───────────────────────────────────────────── */
+    .upload-zone {
+      position: relative;
+      border: 2px dashed var(--clr-border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #fafbff;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--clr-primary);
+      background: #eef3fd;
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-zone .icon { font-size: 2.5rem; }
+    .upload-zone .hint { font-size: .8rem; color: var(--clr-muted); margin-top: .3rem; }
+    .upload-zone .filename {
+      font-size: .82rem;
+      color: var(--clr-primary);
+      margin-top: .4rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    /* ── Toggle / checkbox ───────────────────────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-top: .75rem;
+      font-size: .87rem;
+      color: var(--clr-text);
+    }
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--clr-border);
+      border-radius: 22px;
+      transition: background .2s;
+      cursor: pointer;
+    }
+    .toggle input:checked + .toggle-track { background: var(--clr-primary); }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+      pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      padding: .75rem 1.5rem;
+      border: none;
+      border-radius: 50px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--clr-primary); color: #fff; }
+    .btn-primary:hover { background: var(--clr-primary-d); }
+    .btn-success { background: var(--clr-accent); color: #fff; }
+    .btn-full    { width: 100%; margin-top: .85rem; }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* ── Spinner ─────────────────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: inline-block; }
+    .loading .btn-text { display: none; }
+
+    /* ── Preview image ───────────────────────────────────────────────── */
+    .preview-img {
+      width: 100%;
+      max-height: 240px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f0f4f9;
+      display: none;
+      margin-top: .75rem;
+    }
+
+    /* ── OCR text ────────────────────────────────────────────────────── */
+    .ocr-output {
+      background: #f8f9fa;
+      border: 1.5px solid var(--clr-border);
+      border-radius: 8px;
+      padding: .75rem;
+      font-family: "Courier New", monospace;
+      font-size: .82rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 60px;
+      max-height: 300px;
+      overflow-y: auto;
+      color: var(--clr-text);
+    }
+    .ocr-placeholder { color: var(--clr-muted); font-family: inherit; font-style: italic; }
+
+    /* ── Parsed table ────────────────────────────────────────────────── */
+    .parsed-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .83rem;
+    }
+    .parsed-table th {
+      text-align: left;
+      padding: .5rem .6rem;
+      background: #f0f4f9;
+      font-weight: 700;
+      font-size: .78rem;
+      color: var(--clr-muted);
+      border-bottom: 1.5px solid var(--clr-border);
+    }
+    .parsed-table td {
+      padding: .45rem .6rem;
+      border-bottom: 1px solid var(--clr-border);
+      word-break: break-all;
+    }
+    .badge {
+      display: inline-block;
+      padding: .18rem .5rem;
+      border-radius: 4px;
+      font-size: .72rem;
+      font-weight: 700;
+      background: #e8f0fe;
+      color: var(--clr-primary);
+    }
+
+    /* ── Alert ───────────────────────────────────────────────────────── */
+    .alert {
+      padding: .75rem 1rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      margin-top: .5rem;
+      display: none;
+    }
+    .alert-error   { background: #fce8e6; color: #c5221f; border: 1px solid #f28b82; }
+    .alert-success { background: #e6f4ea; color: #1e7e34; border: 1px solid #81c995; }
+    .alert.visible { display: block; }
+
+    /* ── Section title inside panels ─────────────────────────────────── */
+    .section-title {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--clr-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin: 1rem 0 .4rem;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* ── Result section divider ──────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1.5px solid var(--clr-border);
+      margin: 1rem 0;
+    }
+
+    /* ── Responsive tweaks for small phones ──────────────────────────── */
+    @media (max-width: 400px) {
+      .row { grid-template-columns: 1fr; }
+      header h1 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header>
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+       stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="3"/>
+    <line x1="2" y1="10" x2="22" y2="10"/>
+    <line x1="6" y1="15" x2="10" y2="15"/>
+    <circle cx="17" cy="15" r="1.5" fill="white" stroke="none"/>
+  </svg>
+  <div>
+    <h1>Smart ID Scanner</h1>
+    <p>Mobile Testing Interface</p>
+  </div>
+</header>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Settings card -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+      </svg>
+      OCR Settings
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div>
+          <label for="ocr-lang">Language</label>
+          <input type="text" id="ocr-lang" value="eng" placeholder="eng, fra, ara, eng+fra…" />
+        </div>
+        <div>
+          <label for="ocr-psm">PSM Mode</label>
+          <select id="ocr-psm">
+            <option value="3">3 – Auto</option>
+            <option value="4">4 – Single column</option>
+            <option value="6" selected>6 – Uniform block</option>
+            <option value="7">7 – Single line</option>
+            <option value="8">8 – Single word</option>
+            <option value="11">11 – Sparse text</option>
+            <option value="13">13 – Raw line</option>
+          </select>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label class="toggle" for="auto-detect">
+          <input type="checkbox" id="auto-detect" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+        <span>Auto-detect &amp; crop card outline</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan modes card -->
+  <div class="card">
+    <div class="tab-bar">
+      <div class="tab active" data-tab="single">Single Side</div>
+      <div class="tab" data-tab="both">Both Sides</div>
+    </div>
+
+    <!-- ── Single-side panel ────────────────────────────────────────── -->
+    <div class="tab-panel active" id="panel-single">
+
+      <div class="section-title">Upload or Photograph</div>
+      <div class="upload-zone" id="drop-single">
+        <input type="file" id="file-single" accept="image/*" capture="environment" />
+        <div class="icon">📷</div>
+        <div>Tap to take photo or choose image</div>
+        <div class="hint">PNG · JPG · BMP · TIFF · max 16 MB</div>
+        <div class="filename" id="fname-single"></div>
+      </div>
+
+      <img class="preview-img" id="preview-single" alt="Preview" />
+
+      <button class="btn btn-primary btn-full" id="btn-scan-single" disabled>
+        <span class="spinner"></span>
+        <span class="btn-text">🔍&nbsp; Run OCR</span>
+      </button>
+
+      <div class="alert alert-error" id="err-single"></div>
+
+      <!-- Results -->
+      <div id="results-single" style="display:none">
+        <hr class="divider" />
+        <div class="section-title">Extracted Text</div>
+        <div class="ocr-output" id="text-single"></div>
+
+        <div class="section-title" style="margin-top:.85rem">Parsed Data</div>
+        <div id="parsed-single"></div>
+      </div>
+    </div>
+
+    <!-- ── Both-sides panel ─────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-both">
+
+      <div class="section-title">Front (Recto)</div>
+      <div class="upload-zone" id="drop-recto">
+        <input type="file" id="file-recto" accept="image/*" capture="environment" />
+        <div class="icon">🪪</div>
+        <div>Front side of the ID card</div>
+        <div class="hint">PNG · JPG · BMP · TIFF · max 16 MB</div>
+        <div class="filename" id="fname-recto"></div>
+      </div>
+      <img class="preview-img" id="preview-recto" alt="Recto preview" />
+
+      <div class="section-title" style="margin-top:1rem">Back (Verso)</div>
+      <div class="upload-zone" id="drop-verso">
+        <input type="file" id="file-verso" accept="image/*" capture="environment" />
+        <div class="icon">🔄</div>
+        <div>Back side of the ID card (optional)</div>
+        <div class="hint">PNG · JPG · BMP · TIFF · max 16 MB</div>
+        <div class="filename" id="fname-verso"></div>
+      </div>
+      <img class="preview-img" id="preview-verso" alt="Verso preview" />
+
+      <button class="btn btn-success btn-full" id="btn-scan-both" disabled>
+        <span class="spinner"></span>
+        <span class="btn-text">🔍&nbsp; Scan Both Sides</span>
+      </button>
+
+      <div class="alert alert-error" id="err-both"></div>
+
+      <!-- Results recto -->
+      <div id="results-recto" style="display:none">
+        <hr class="divider" />
+        <div class="section-title">Front – Extracted Text</div>
+        <div class="ocr-output" id="text-recto"></div>
+        <div class="section-title" style="margin-top:.85rem">Front – Parsed Data</div>
+        <div id="parsed-recto"></div>
+      </div>
+
+      <!-- Results verso -->
+      <div id="results-verso" style="display:none">
+        <hr class="divider" />
+        <div class="section-title">Back – Extracted Text</div>
+        <div class="ocr-output" id="text-verso"></div>
+        <div class="section-title" style="margin-top:.85rem">Back – Parsed Data</div>
+        <div id="parsed-verso"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── JavaScript ──────────────────────────────────────────────────────── -->
+<script>
+"use strict";
+
+/* ── Tab switching ──────────────────────────────────────────────────── */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab, .tab-panel").forEach(el => el.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+  });
+});
+
+/* ── Upload zone helpers ────────────────────────────────────────────── */
+function setupUploadZone(zoneId, inputId, fnameId, previewId, btnIds) {
+  const zone    = document.getElementById(zoneId);
+  const input   = document.getElementById(inputId);
+  const fname   = document.getElementById(fnameId);
+  const preview = document.getElementById(previewId);
+
+  function updateFile(file) {
+    if (!file) return;
+    fname.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+    btnIds.forEach(id => {
+      checkEnableScanBtn(id);
+    });
+  }
+
+  input.addEventListener("change", () => updateFile(input.files[0]));
+
+  // Drag-and-drop (desktop convenience)
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = e.dataTransfer?.files?.[0];
+    if (file) { input.files = e.dataTransfer.files; updateFile(file); }
+  });
+}
+
+function checkEnableScanBtn(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (btnId === "btn-scan-single") {
+    btn.disabled = !document.getElementById("file-single").files[0];
+  } else if (btnId === "btn-scan-both") {
+    btn.disabled = !document.getElementById("file-recto").files[0];
+  }
+}
+
+setupUploadZone("drop-single", "file-single", "fname-single", "preview-single", ["btn-scan-single"]);
+setupUploadZone("drop-recto",  "file-recto",  "fname-recto",  "preview-recto",  ["btn-scan-both"]);
+setupUploadZone("drop-verso",  "file-verso",  "fname-verso",  "preview-verso",  ["btn-scan-both"]);
+
+/* ── Parsed-data table renderer ─────────────────────────────────────── */
+function renderParsed(containerId, items) {
+  const el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<p style="font-size:.82rem;color:var(--clr-muted)">No structured data found.</p>';
+    return;
+  }
+  let html = '<table class="parsed-table"><thead><tr>'
+           + '<th>Field</th><th>Value</th></tr></thead><tbody>';
+  items.forEach(row => {
+    html += `<tr><td><span class="badge">${escHtml(row.field)}</span></td>`
+          + `<td>${escHtml(row.value)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ── OCR text renderer ───────────────────────────────────────────────── */
+function renderText(elId, text) {
+  const el = document.getElementById(elId);
+  if (!text) {
+    el.innerHTML = '<span class="ocr-placeholder">No text extracted.</span>';
+  } else {
+    el.textContent = text;
+  }
+}
+
+/* ── Loading state helpers ───────────────────────────────────────────── */
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (loading) { btn.classList.add("loading"); btn.disabled = true; }
+  else         { btn.classList.remove("loading"); btn.disabled = false; }
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.add("visible");
+}
+function hideError(elId) {
+  document.getElementById(elId).classList.remove("visible");
+}
+
+/* ── Common settings ─────────────────────────────────────────────────── */
+function getSettings() {
+  return {
+    lang:        document.getElementById("ocr-lang").value.trim() || "eng",
+    psm:         document.getElementById("ocr-psm").value,
+    auto_detect: document.getElementById("auto-detect").checked ? "true" : "false",
+  };
+}
+
+/* ── Single-side scan ─────────────────────────────────────────────────── */
+document.getElementById("btn-scan-single").addEventListener("click", async () => {
+  const file = document.getElementById("file-single").files[0];
+  if (!file) return;
+
+  hideError("err-single");
+  setLoading("btn-scan-single", true);
+
+  const s = getSettings();
+  const fd = new FormData();
+  fd.append("image", file);
+  fd.append("lang",  s.lang);
+  fd.append("psm",   s.psm);
+  fd.append("auto_detect", s.auto_detect);
+
+  try {
+    const res = await fetch("/api/scan", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Scan failed.");
+
+    // Update preview with processed image
+    const pImg = document.getElementById("preview-single");
+    pImg.src = data.preview;
+    pImg.style.display = "block";
+
+    renderText("text-single", data.text);
+    renderParsed("parsed-single", data.parsed);
+    document.getElementById("results-single").style.display = "block";
+    document.getElementById("results-single").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    showError("err-single", "⚠️ " + err.message);
+  } finally {
+    setLoading("btn-scan-single", false);
+    checkEnableScanBtn("btn-scan-single");
+  }
+});
+
+/* ── Both-sides scan ──────────────────────────────────────────────────── */
+document.getElementById("btn-scan-both").addEventListener("click", async () => {
+  const recto = document.getElementById("file-recto").files[0];
+  if (!recto) return;
+
+  hideError("err-both");
+  setLoading("btn-scan-both", true);
+
+  const s = getSettings();
+  const fd = new FormData();
+  fd.append("recto", recto);
+  const verso = document.getElementById("file-verso").files[0];
+  if (verso) fd.append("verso", verso);
+  fd.append("lang",  s.lang);
+  fd.append("psm",   s.psm);
+  fd.append("auto_detect", s.auto_detect);
+
+  try {
+    const res = await fetch("/api/scan-both", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Scan failed.");
+
+    // Recto
+    const pRecto = document.getElementById("preview-recto");
+    pRecto.src = data.recto.preview;
+    pRecto.style.display = "block";
+    renderText("text-recto", data.recto.text);
+    renderParsed("parsed-recto", data.recto.parsed);
+    document.getElementById("results-recto").style.display = "block";
+
+    // Verso
+    if (data.verso) {
+      const pVerso = document.getElementById("preview-verso");
+      pVerso.src = data.verso.preview;
+      pVerso.style.display = "block";
+      renderText("text-verso", data.verso.text);
+      renderParsed("parsed-verso", data.verso.parsed);
+      document.getElementById("results-verso").style.display = "block";
+    }
+
+    document.getElementById("results-recto").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    showError("err-both", "⚠️ " + err.message);
+  } finally {
+    setLoading("btn-scan-both", false);
+    checkEnableScanBtn("btn-scan-both");
+  }
+});
+</script>
+</body>
+</html>
